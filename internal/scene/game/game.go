@@ -32,6 +32,7 @@ const (
 	entryNarration entryKind = iota
 	entryCommand
 	entryAside
+	entryRaw
 )
 
 type entry struct {
@@ -188,8 +189,11 @@ func (m *Model) insertInput(text string) {
 }
 
 func entryFromEvent(event engine.Event) entry {
-	if event.Kind == engine.EventAside {
+	switch event.Kind {
+	case engine.EventAside:
 		return entry{kind: entryAside, text: event.Text}
+	case engine.EventRaw:
+		return entry{kind: entryRaw, text: event.Text}
 	}
 	return entry{kind: entryNarration, text: event.Text}
 }
@@ -197,8 +201,8 @@ func entryFromEvent(event engine.Event) entry {
 func (m Model) View() tea.View {
 	view := tea.NewView(m.renderLogInput())
 	view.AltScreen = true
-	view.BackgroundColor = style.Dark
-	view.ForegroundColor = style.White
+	view.BackgroundColor = style.ColourDark
+	view.ForegroundColor = style.ColourWhite
 	view.WindowTitle = "Lumingrate"
 	return view
 }
@@ -219,11 +223,7 @@ func (m Model) renderLogInput() string {
 
 func (m Model) renderLog(width, height int) string {
 	heightWithPadding := height - 2
-	lines := make([]string, 0, len(m.log))
-	for _, item := range m.log {
-		rendered := m.renderEntry(item, width)
-		lines = append(lines, strings.Split(rendered, "\n")...)
-	}
+	lines := m.renderLogLines(width)
 
 	if len(lines) > heightWithPadding {
 		lines = lines[len(lines)-heightWithPadding:]
@@ -239,6 +239,36 @@ func (m Model) renderLog(width, height int) string {
 	)
 }
 
+func (m Model) renderLogLines(width int) []string {
+	lines := make([]string, 0, len(m.log))
+	rawLine := ""
+	for _, item := range m.log {
+		if item.kind == entryRaw {
+			parts := strings.Split(item.text, "\n")
+			rawLine += parts[0]
+			for _, part := range parts[1:] {
+				lines = append(lines, style.Background.Width(width).Render(rawLine))
+				rawLine = part
+			}
+			continue
+		}
+
+		if rawLine != "" {
+			lines = append(lines, style.Background.Width(width).Render(rawLine))
+			rawLine = ""
+		}
+
+		rendered := m.renderEntry(item, width)
+		lines = append(lines, strings.Split(rendered, "\n")...)
+	}
+
+	if rawLine != "" {
+		lines = append(lines, style.Background.Width(width).Render(rawLine))
+	}
+
+	return lines
+}
+
 func (m Model) padLines(lines []string, size int, fullWidth int) []string {
 	padded := make([]string, len(lines)+2)
 	padded[0] = screenStyle.Height(size).Width(fullWidth).Render("")
@@ -250,15 +280,17 @@ func (m Model) padLines(lines []string, size int, fullWidth int) []string {
 }
 
 func (m Model) renderEntry(item entry, width int) string {
-	style := logStyle
+	entryStyle := logStyle
 	switch item.kind {
 	case entryCommand:
-		style = commandStyle
+		entryStyle = commandStyle
 	case entryAside:
-		style = asideStyle
+		entryStyle = asideStyle
+	case entryRaw:
+		return style.Background.Width(width).Render(item.text)
 	}
 
-	return style.Width(width).Render(lipgloss.Wrap(item.text, width, " "))
+	return entryStyle.Width(width).Background(style.ColourBackground).Render(lipgloss.Wrap(item.text, width, " "))
 }
 
 func (m Model) renderInputLine(width int) string {

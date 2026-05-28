@@ -111,8 +111,8 @@ func (m model) View() tea.View {
 
 	view := tea.NewView(m.place(content))
 	view.AltScreen = true
-	view.BackgroundColor = style.Dark
-	view.ForegroundColor = style.White
+	view.BackgroundColor = style.ColourDark
+	view.ForegroundColor = style.ColourWhite
 	view.WindowTitle = "Lumingrate"
 	return view
 }

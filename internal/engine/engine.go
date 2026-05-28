@@ -1,9 +1,6 @@
 package engine
 
-import (
-	"context"
-	"luminrate/internal/util"
-)
+import "context"
 
 type EventKind int
 
@@ -14,6 +11,7 @@ const (
 	EventHideInput
 	EventShowInput
 	EventInsertInput
+	EventRaw
 )
 
 type Event struct {
@@ -36,6 +34,10 @@ const (
 type Runtime interface {
 	Emit(Event) bool
 	EmitCommandsHint(string, []string)
+	EmitTypingText(string)
+	BlockUntilContinue() string
+	BlockUntilContinueWithText(string) string
+	ConsumeCommandsNow()
 }
 
 type Chapter interface {
@@ -100,7 +102,7 @@ func (e *Engine) handleSubmit(command string) {
 		return
 	}
 
-	e.chapter.HandleCommand(e, util.NormaliseCommand(command))
+	e.chapter.HandleCommand(e, NormaliseCommand(command))
 }
 
 func (e *Engine) handleTab(input string) {
@@ -109,13 +111,13 @@ func (e *Engine) handleTab(input string) {
 		return
 	}
 
-	e.chapter.HandleTab(e, util.NormaliseCommand(input))
+	e.chapter.HandleTab(e, NormaliseCommand(input))
 }
 
 func matchingCommands(commands []string, prefix string) []string {
 	matches := make([]string, 0, len(commands))
 	for _, command := range commands {
-		normalised := util.NormaliseCommand(command)
+		normalised := NormaliseCommand(command)
 		if prefix == "" || len(normalised) >= len(prefix) && normalised[:len(prefix)] == prefix {
 			matches = append(matches, normalised)
 		}
@@ -129,18 +131,5 @@ func (e *Engine) Emit(event Event) bool {
 		return false
 	case e.events <- event:
 		return true
-	}
-}
-
-func (e *Engine) EmitCommandsHint(input string, commands []string) {
-	command := util.NormaliseCommand(input)
-	matches := matchingCommands(commands, command)
-	switch len(matches) {
-	case 0:
-		e.Emit(Event{Kind: EventInputMessage, Text: "No hints available :)"})
-	case 1:
-		e.Emit(Event{Kind: EventInsertInput, Text: matches[0][len(command):]})
-	default:
-		e.Emit(Event{Kind: EventInputMessage, Text: "Hint: " + util.JoinForDisplay(matches) + ""})
 	}
 }
