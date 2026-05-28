@@ -31,6 +31,7 @@ func (e *Engine) EmitCommandsHint(input string, commands []string) {
 
 func (e *Engine) BlockUntilContinueWithText(message string) string {
 	e.Emit(Event{Kind: EventInputMessage, Text: message})
+	e.Emit(Event{Kind: EventShowInput})
 
 	defer func() {
 		e.Emit(Event{Kind: EventInputMessage, Text: ""})

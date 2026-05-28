@@ -50,6 +50,8 @@ var (
 		Background(ColourBackground).
 		Foreground(ColourMuted)
 
+	AsideKeyword = Aside.Bold(true)
+
 	MenuTitle = lipgloss.NewStyle().
 			Background(ColourBackground).
 			Foreground(ColourForeground).

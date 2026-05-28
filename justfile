@@ -3,8 +3,13 @@ set shell := ["bash", "-c"]
 default:
 	@just --list
 
-build:
+build: build-web
     go build -o bin/lumingrate -ldflags="-s -w" main.go
+
+[env("GOOS", "js")]
+[env("GOARCH", "wasm")]
+build-web:
+	go build -o web/src/lib/lumingrate.wasm -ldflags="-s -w" cmd/web/web.go
 
 run:
     go run main.go

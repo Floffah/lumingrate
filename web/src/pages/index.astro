@@ -1,0 +1,65 @@
+---
+import { Font } from 'astro:assets'
+import '../styles/global.css'
+import "@xterm/xterm/css/xterm.css"
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Astro</title>
+		<Font cssVariable="--font-mono" preload />
+	</head>
+	<body class="flex min-h-screen max-h-scree min-w-screen flex-col bg-black">
+        <p class="shrink-0 bg-white/10 text-white/80">This is a web-based terminal emulator emulating the real game through webassembly. For the best experience download the game and run it in a native terminal emulator like Ghostty or cmux</p>
+		<div id="terminal" class="flex-1 font-mono"></div>
+	</body>
+</html>
+
+<script>
+    import "@/lib/wasm_exec"
+	import { Terminal } from "@xterm/xterm";
+	import lumingrate from "@/lib/lumingrate.wasm?url"
+	import { FitAddon } from "@xterm/addon-fit";
+
+	const go = new Go();
+	const wasm = await WebAssembly.instantiateStreaming(fetch(lumingrate), go.importObject);
+	go.run(wasm.instance)
+
+	const terminalElement = document.getElementById("terminal") as HTMLElement;
+	const monoFont = window.getComputedStyle(terminalElement).getPropertyValue('--font-mono');
+
+	const term = new Terminal({
+		fontSize: 14,
+		lineHeight: 1.2,
+		fontFamily: monoFont,
+		cursorBlink: true,
+		theme: { background: "#000000", foreground: "#F7F7F2" },
+	});
+
+	const fit = new FitAddon();
+	term.loadAddon(fit);
+	term.open(document.getElementById("terminal") as HTMLElement);
+	fit.fit();
+
+	globalThis.lumingrate.start({
+		cols: term.cols,
+		rows: term.rows,
+		write: (data) => term.write(data),
+	});
+
+	term.onData((data) => globalThis.lumingrate.input(data));
+	term.onResize(({ cols, rows }) => globalThis.lumingrate.resize(cols, rows));
+
+	const resizeObserver = new ResizeObserver(() => {
+		const prop = fit.proposeDimensions()
+		if (prop ) {
+			term.resize(prop?.cols, prop?.rows)
+		}
+	});
+	resizeObserver.observe(document.getElementById("terminal") as HTMLElement);
+</script>
