@@ -38,8 +38,8 @@ var (
 		Foreground(ColourForeground)
 
 	Cursor = lipgloss.NewStyle().
-		Background(ColourBackground).
-		Foreground(ColourForeground)
+		Background(ColourForeground).
+		Foreground(ColourBackground)
 
 	Command = lipgloss.NewStyle().
 		Background(ColourBackground).

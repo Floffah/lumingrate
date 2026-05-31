@@ -61,6 +61,7 @@ func TestBlockUntilContinueRepromptsUntilEmptySubmit(t *testing.T) {
 	go gameEngine.Run(ctx)
 
 	expectContinuePrompt(t, gameEngine.Events())
+	expectEventKind(t, gameEngine.Events(), EventShowInput)
 
 	select {
 	case gameEngine.Commands() <- Command{Kind: CommandSubmit, Text: "wait"}:
@@ -86,6 +87,54 @@ func TestBlockUntilContinueRepromptsUntilEmptySubmit(t *testing.T) {
 	case <-chapter.resumed:
 	case <-time.After(time.Second):
 		t.Fatal("chapter did not resume after continue command")
+	}
+}
+
+func expectEventKind(t *testing.T, events <-chan Event, want EventKind) {
+	t.Helper()
+
+	select {
+	case event := <-events:
+		if event.Kind != want {
+			t.Fatalf("event.Kind = %v, want %v", event.Kind, want)
+		}
+	case <-time.After(time.Second):
+		t.Fatalf("timed out waiting for event kind %v", want)
+	}
+}
+
+func TestSleepReturnsAfterDuration(t *testing.T) {
+	gameEngine := NewEngine(nil)
+	done := make(chan struct{})
+
+	go func() {
+		gameEngine.Sleep(20 * time.Millisecond)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("sleep did not return after duration")
+	}
+}
+
+func TestSleepReturnsWhenFastForwardEnabled(t *testing.T) {
+	gameEngine := NewEngine(nil)
+	done := make(chan struct{})
+
+	go func() {
+		gameEngine.Sleep(time.Hour)
+		close(done)
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	gameEngine.SetFastForward(true)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("sleep did not return after fast-forward was enabled")
 	}
 }
 

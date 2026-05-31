@@ -6,15 +6,17 @@ import (
 	"luminrate/internal/story"
 	"luminrate/internal/style"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
 
 const (
-	defaultWidth  = 80
-	defaultHeight = 24
-	prompt        = "> "
+	defaultWidth        = 80
+	defaultHeight       = 24
+	prompt              = "> "
+	cursorBlinkInterval = 1 * time.Second
 )
 
 var (
@@ -44,6 +46,7 @@ type Model struct {
 	width    int
 	height   int
 	cancel   context.CancelFunc
+	engine   *engine.Engine
 	commands chan<- engine.Command
 	events   <-chan engine.Event
 
@@ -51,35 +54,39 @@ type Model struct {
 	input  string
 	cursor int
 
-	inputVisible bool
-	inputMessage string
+	inputVisible  bool
+	cursorVisible bool
+	inputMessage  string
+	skipHeld      bool
 }
 
-func NewModel() Model {
+func NewModel() *Model {
 	return NewModelWithSize(defaultWidth, defaultHeight)
 }
 
-func NewModelWithSize(width, height int) Model {
+func NewModelWithSize(width, height int) *Model {
 	ctx, cancel := context.WithCancel(context.Background())
 	gameEngine := story.NewEngine()
 	go gameEngine.Run(ctx)
 
-	return Model{
+	return &Model{
 		width:    max(width, 1),
 		height:   max(height, 1),
 		cancel:   cancel,
+		engine:   gameEngine,
 		commands: gameEngine.Commands(),
 		events:   gameEngine.Events(),
 
-		inputVisible: true,
+		inputVisible:  true,
+		cursorVisible: true,
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	return tea.Batch(tea.RequestWindowSize, waitForEngineEvent(m.events))
+func (m *Model) Init() tea.Cmd {
+	return tea.Batch(tea.RequestWindowSize, waitForEngineEvent(m.events), blinkCursor())
 }
 
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -89,14 +96,52 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, waitForEngineEvent(m.events)
 	case engineStoppedMsg:
 		return m, nil
+	case cursorBlinkMsg:
+		if m.inputVisible {
+			m.cursorVisible = !m.cursorVisible
+		} else {
+			m.cursorVisible = false
+		}
+		return m, blinkCursor()
 	case tea.KeyPressMsg:
+		if m.updateSkipKey(msg.Key(), true) {
+			return m, nil
+		}
 		return m.updateInput(msg)
+	case tea.KeyReleaseMsg:
+		m.updateSkipKey(msg.Key(), false)
 	}
 
 	return m, nil
 }
 
-func (m Model) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m *Model) updateSkipKey(key tea.Key, held bool) bool {
+	if !isSkipKey(key) {
+		return false
+	}
+
+	if held && m.inputVisible {
+		return false
+	}
+
+	m.skipHeld = held
+	m.syncFastForward()
+	return true
+}
+
+func (m *Model) syncFastForward() {
+	if m.engine == nil {
+		return
+	}
+
+	m.engine.SetFastForward(m.skipHeld && !m.inputVisible)
+}
+
+func isSkipKey(key tea.Key) bool {
+	return key.Code == tea.KeySpace || key.BaseCode == tea.KeySpace
+}
+
+func (m *Model) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	msgStr := msg.String()
 
 	if msgStr == "ctrl+c" {
@@ -150,7 +195,7 @@ func (m Model) updateInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) submitInput() (tea.Model, tea.Cmd) {
+func (m *Model) submitInput() (tea.Model, tea.Cmd) {
 	command := strings.TrimSpace(m.input)
 
 	if command != "" {
@@ -169,8 +214,13 @@ func (m *Model) applyEvent(event engine.Event) {
 		m.inputMessage = event.Text
 	case engine.EventHideInput:
 		m.inputVisible = false
+		m.cursorVisible = false
+		m.syncFastForward()
 	case engine.EventShowInput:
 		m.inputVisible = true
+		m.cursorVisible = true
+		m.skipHeld = false
+		m.syncFastForward()
 	case engine.EventInsertInput:
 		m.insertInput(event.Text)
 	default:
@@ -198,16 +248,17 @@ func entryFromEvent(event engine.Event) entry {
 	return entry{kind: entryNarration, text: event.Text}
 }
 
-func (m Model) View() tea.View {
+func (m *Model) View() tea.View {
 	view := tea.NewView(m.renderLogInput())
 	view.AltScreen = true
 	view.BackgroundColor = style.ColourDark
 	view.ForegroundColor = style.ColourWhite
+	view.KeyboardEnhancements.ReportEventTypes = true
 	view.WindowTitle = "Lumingrate"
 	return view
 }
 
-func (m Model) renderLogInput() string {
+func (m *Model) renderLogInput() string {
 	width := max(m.width, 1)
 	height := max(m.height, 1)
 	messageHeight := 1
@@ -221,7 +272,7 @@ func (m Model) renderLogInput() string {
 	return lipgloss.JoinVertical(lipgloss.Top, log, input, message)
 }
 
-func (m Model) renderLog(width, height int) string {
+func (m *Model) renderLog(width, height int) string {
 	heightWithPadding := height - 2
 	lines := m.renderLogLines(width)
 
@@ -239,7 +290,7 @@ func (m Model) renderLog(width, height int) string {
 	)
 }
 
-func (m Model) renderLogLines(width int) []string {
+func (m *Model) renderLogLines(width int) []string {
 	lines := make([]string, 0, len(m.log))
 	rawLine := ""
 	for _, item := range m.log {
@@ -269,7 +320,7 @@ func (m Model) renderLogLines(width int) []string {
 	return lines
 }
 
-func (m Model) padLines(lines []string, size int, fullWidth int) []string {
+func (m *Model) padLines(lines []string, size int, fullWidth int) []string {
 	padded := make([]string, len(lines)+2)
 	padded[0] = screenStyle.Height(size).Width(fullWidth).Render("")
 	for i, line := range lines {
@@ -279,7 +330,7 @@ func (m Model) padLines(lines []string, size int, fullWidth int) []string {
 	return padded
 }
 
-func (m Model) renderEntry(item entry, width int) string {
+func (m *Model) renderEntry(item entry, width int) string {
 	entryStyle := logStyle
 	switch item.kind {
 	case entryCommand:
@@ -293,7 +344,7 @@ func (m Model) renderEntry(item entry, width int) string {
 	return entryStyle.Width(width).Background(style.ColourBackground).Render(lipgloss.Wrap(item.text, width, " "))
 }
 
-func (m Model) renderInputLine(width int) string {
+func (m *Model) renderInputLine(width int) string {
 	content := ""
 	if m.inputVisible {
 		content = prompt + m.renderInput()
@@ -302,11 +353,11 @@ func (m Model) renderInputLine(width int) string {
 	return inputStyle.Width(width).Padding(0, 1).Render(content)
 }
 
-func (m Model) renderInputMessage(width int) string {
+func (m *Model) renderInputMessage(width int) string {
 	return asideStyle.Width(width).Padding(0, 1).Render(m.inputMessage)
 }
 
-func (m Model) renderInput() string {
+func (m *Model) renderInput() string {
 	before := m.input[:m.cursor]
 	after := m.input[m.cursor:]
 	cursor := " "
@@ -315,12 +366,24 @@ func (m Model) renderInput() string {
 		after = after[1:]
 	}
 
-	return before + cursorStyle.Render(cursor) + after
+	if m.cursorVisible {
+		return before + cursorStyle.Render(cursor) + after
+	}
+
+	return before + cursor + after
 }
 
 type engineEventMsg engine.Event
 
 type engineStoppedMsg struct{}
+
+type cursorBlinkMsg time.Time
+
+func blinkCursor() tea.Cmd {
+	return tea.Tick(cursorBlinkInterval, func(t time.Time) tea.Msg {
+		return cursorBlinkMsg(t)
+	})
+}
 
 func waitForEngineEvent(events <-chan engine.Event) tea.Cmd {
 	return func() tea.Msg {

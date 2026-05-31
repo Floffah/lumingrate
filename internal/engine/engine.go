@@ -1,6 +1,10 @@
 package engine
 
-import "context"
+import (
+	"context"
+	"sync"
+	"time"
+)
 
 type EventKind int
 
@@ -32,12 +36,20 @@ const (
 )
 
 type Runtime interface {
+	Sleep(time.Duration)
 	Emit(Event) bool
+	EmitNarration(string)
+	EmitAside(string)
+	IsFastForward() bool
+	ShowInput()
+	HideInput()
+	ShowInputMessage(string)
 	EmitCommandsHint(string, []string)
 	EmitTypingText(string)
 	BlockUntilContinue() string
 	BlockUntilContinueWithText(string) string
 	ConsumeCommandsNow()
+	ConsumeCommandsInline() []Command
 }
 
 type Chapter interface {
@@ -47,17 +59,21 @@ type Chapter interface {
 }
 
 type Engine struct {
-	ctx      context.Context
-	commands chan Command
-	events   chan Event
-	chapter  Chapter
+	ctx             context.Context
+	commands        chan Command
+	events          chan Event
+	chapter         Chapter
+	fastForwardMu   sync.Mutex
+	fastForward     bool
+	fastForwardWake chan struct{}
 }
 
 func NewEngine(chapter Chapter) *Engine {
 	return &Engine{
-		commands: make(chan Command),
-		events:   make(chan Event, 16),
-		chapter:  chapter,
+		commands:        make(chan Command),
+		events:          make(chan Event, 16),
+		chapter:         chapter,
+		fastForwardWake: make(chan struct{}),
 	}
 }
 
@@ -67,6 +83,30 @@ func (e *Engine) Commands() chan<- Command {
 
 func (e *Engine) Events() <-chan Event {
 	return e.events
+}
+
+func (e *Engine) SetFastForward(enabled bool) {
+	e.fastForwardMu.Lock()
+	defer e.fastForwardMu.Unlock()
+
+	if e.fastForward == enabled {
+		return
+	}
+
+	e.fastForward = enabled
+	if enabled {
+		close(e.fastForwardWake)
+		return
+	}
+
+	e.fastForwardWake = make(chan struct{})
+}
+
+func (e *Engine) IsFastForward() bool {
+	e.fastForwardMu.Lock()
+	defer e.fastForwardMu.Unlock()
+
+	return e.fastForward
 }
 
 func (e *Engine) Run(ctx context.Context) {
@@ -98,7 +138,7 @@ func (e *Engine) handleCommand(command Command) {
 
 func (e *Engine) handleSubmit(command string) {
 	if e.chapter == nil {
-		e.Emit(Event{Kind: EventAside, Text: "There is no chapter loaded."})
+		e.EmitAside("There is no chapter loaded.")
 		return
 	}
 
@@ -107,7 +147,7 @@ func (e *Engine) handleSubmit(command string) {
 
 func (e *Engine) handleTab(input string) {
 	if e.chapter == nil {
-		e.Emit(Event{Kind: EventInputMessage, Text: "There is no chapter loaded."})
+		e.ShowInputMessage("There is no chapter loaded.")
 		return
 	}
 
