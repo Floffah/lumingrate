@@ -319,6 +319,9 @@ func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
 		if !c.didTakeCard {
 			runtime.EmitNarration("He places the card on the doorstep, steps back, and turns away.")
 			runtime.Sleep(5 * time.Second)
+		} else {
+			runtime.EmitNarration("He steps back and turns away, leaving the card in your hand.")
+			runtime.Sleep(5 * time.Second)
 		}
 
 		runtime.EmitNarration("You watch him walk away, his figure receding into the rain and darkness.")

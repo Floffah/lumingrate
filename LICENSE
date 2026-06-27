@@ -1,3 +1,20 @@
+The MIT License contained in this file applies ONLY to software source code
+contained within this repository, including but not limited to:
+
+- TypeScript, JavaScript, Go, and other programming language source files
+- Build scripts and configuration files
+- Astro components and application code
+- Stylesheets and related software assets
+
+This license DOES NOT apply to any creative or worldbuilding content,
+including but not limited to the chapter code, story-related files,
+artwork, maps, stories, characters, locations, timelines,
+fictional technologies, or other content relating to the Luminous universe.
+
+See `CONTENT_LICENSE` inside the Luminous repository at https://github.com/Floffah/luminous for the terms governing creative content.
+
+---
+
 MIT License
 
 Copyright (c) 2026 Floffah
