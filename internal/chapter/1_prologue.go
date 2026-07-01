@@ -52,11 +52,13 @@ func (c *Prologue) HandleCommand(runtime engine.Runtime, cmd string) {
 	switch c.phase {
 	case prologuePhaseInitial:
 		if strings.Contains(cmd, "get") {
+			// label: get up
 			c.BeginPhaseGotUp(runtime)
 			return
 		}
 	case prologuePhaseGotUp:
 		if strings.Contains(cmd, "greet") || strings.Contains(cmd, "hello") || strings.Contains(cmd, "hi") {
+			// label: greet Elias
 			runtime.HideInput()
 			runtime.EmitNarration("\"Hello, do I know you?\"")
 			runtime.Sleep(3 * time.Second)
@@ -65,6 +67,7 @@ func (c *Prologue) HandleCommand(runtime engine.Runtime, cmd string) {
 			c.BeginPhaseOpenedDoor(runtime)
 			return
 		} else if strings.TrimSpace(cmd) == "" || strings.Contains(cmd, "stay") || strings.Contains(cmd, "silent") {
+			// label: stay silent
 			runtime.HideInput()
 			runtime.EmitNarration("You stay silent.")
 			runtime.Sleep(3 * time.Second)
@@ -75,12 +78,14 @@ func (c *Prologue) HandleCommand(runtime engine.Runtime, cmd string) {
 		}
 	case prologuePhaseOpenedDoor:
 		if strings.Contains(cmd, "question") || strings.Contains(cmd, "who") || strings.Contains(cmd, "what") {
+			// label: ask who Elias is
 			runtime.HideInput()
 			runtime.EmitNarration("You ask him who he is and what he wants, because people in dark coats with custom lapel pins rarely sell broadband.")
 			runtime.Sleep(3 * time.Second)
 			c.BeginPhaseIntroduced(runtime)
 			return
 		} else if strings.TrimSpace(cmd) == "" || strings.Contains(cmd, "stay") || strings.Contains(cmd, "silent") {
+			// label: let Elias continue
 			runtime.HideInput()
 			runtime.EmitNarration("You stay silent.")
 			runtime.Sleep(3 * time.Second)
@@ -89,6 +94,7 @@ func (c *Prologue) HandleCommand(runtime engine.Runtime, cmd string) {
 		}
 	case prologuePhaseIntroduced:
 		if strings.Contains(cmd, "question") || strings.Contains(cmd, "proof") || strings.Contains(cmd, "what") {
+			// label: ask for proof
 			runtime.HideInput()
 			runtime.EmitNarration("You ask him what proof he has that he's not just some weirdo who showed up at your door. Maybe his Wifi is \"out of this world!\".")
 			runtime.Sleep(5 * time.Second)
@@ -97,6 +103,7 @@ func (c *Prologue) HandleCommand(runtime engine.Runtime, cmd string) {
 			c.BeginPhaseCredibility(runtime)
 			return
 		} else if strings.Contains(cmd, "take") || strings.Contains(cmd, "card") {
+			// label: take the card
 			runtime.HideInput()
 			runtime.EmitNarration("You take the card. It's cold to the touch, and the silver mark is slightly textured and raised.")
 			c.didTakeCard = true
@@ -104,6 +111,7 @@ func (c *Prologue) HandleCommand(runtime engine.Runtime, cmd string) {
 			c.BeginPhaseCredibility(runtime)
 			return
 		} else if strings.Contains(cmd, "refuse") || strings.Contains(cmd, "listen") || strings.Contains(cmd, "no") || strings.Contains(cmd, "slam") || strings.Contains(cmd, "shut") || strings.Contains(cmd, "door") {
+			// label: refuse to listen
 			runtime.HideInput()
 			runtime.EmitNarration("You slam the door in his face. The sound echoes through the quiet neighborhood.")
 			c.didSlamDoor = true
@@ -145,6 +153,7 @@ func (c *Prologue) HandleTab(runtime engine.Runtime, input string) {
 }
 
 func (c *Prologue) BeginPhaseInitial(runtime engine.Runtime) {
+	// phase: initial
 	c.phase = prologuePhaseInitial
 
 	runtime.HideInput()
@@ -174,6 +183,7 @@ func (c *Prologue) BeginPhaseInitial(runtime engine.Runtime) {
 }
 
 func (c *Prologue) BeginPhaseGotUp(runtime engine.Runtime) {
+	// phase: got up
 	c.gettingUpCan()
 	c.phase = prologuePhaseGotUp
 
@@ -197,6 +207,7 @@ func (c *Prologue) BeginPhaseGotUp(runtime engine.Runtime) {
 }
 
 func (c *Prologue) BeginPhaseOpenedDoor(runtime engine.Runtime) {
+	// phase: opened door
 	c.phase = prologuePhaseOpenedDoor
 
 	runtime.HideInput()
@@ -214,6 +225,7 @@ func (c *Prologue) BeginPhaseOpenedDoor(runtime engine.Runtime) {
 }
 
 func (c *Prologue) BeginPhaseIntroduced(runtime engine.Runtime) {
+	// phase: introduced
 	c.phase = prologuePhaseIntroduced
 
 	runtime.HideInput()
@@ -245,11 +257,14 @@ func (c *Prologue) BeginPhaseIntroduced(runtime engine.Runtime) {
 }
 
 func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
+	// phase: credibility
 	c.phase = prologuePhaseCredibility
 
 	runtime.HideInput()
 	if !c.didSlamDoor {
+		// label: did not slam door
 		if !c.didTakeCard {
+			// label: sceptical without card
 			runtime.EmitNarration("\"You don't believe me.\"")
 			runtime.Sleep(3 * time.Second)
 			runtime.EmitNarration("You reply, \"Too right, this is nonsense. You come to my door claiming to represent some secret civilisation and expect me to nod along?\"")
@@ -257,6 +272,7 @@ func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
 			runtime.EmitNarration("\"I wouldn't believe me either.\", he replies.")
 			runtime.Sleep(5 * time.Second)
 		}
+		// label: proof and interview
 		runtime.EmitNarration("\"Unfortunately, everything important about this conversation sounds ridiculous when spoken aloud.\"")
 		runtime.BlockUntilContinue()
 
@@ -317,9 +333,11 @@ func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
 		runtime.BlockUntilContinue()
 
 		if !c.didTakeCard {
+			// label: Elias leaves card
 			runtime.EmitNarration("He places the card on the doorstep, steps back, and turns away.")
 			runtime.Sleep(5 * time.Second)
 		} else {
+			// label: already holding card
 			runtime.EmitNarration("He steps back and turns away, leaving the card in your hand.")
 			runtime.Sleep(5 * time.Second)
 		}
@@ -328,11 +346,13 @@ func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
 		runtime.Sleep(5 * time.Second)
 
 		if !c.didTakeCard {
+			// label: pick up doorstep card
 			runtime.EmitNarration("The card still lies on the doorstep, its silver mark catching the dim light.")
 			runtime.Sleep(5 * time.Second)
 			runtime.EmitNarration("You pick it up and examine it. It's cold to the touch, and the silver mark is slightly textured and raised.")
 		}
 	} else {
+		// label: card through letterbox
 		runtime.EmitNarration("The card comes through the letterbox a few seconds later, landing on the doormat with barely a sound. You pick it up and examine it. It's cold to the touch, and the silver mark is slightly textured and raised.")
 	}
 }
