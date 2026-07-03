@@ -324,7 +324,7 @@ func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
 		runtime.BlockUntilContinue()
 
 		runtime.EmitNarration("")
-		runtime.EmitNarration("\"There is a train leaving Waverley tomorrow morning.\"")
+		runtime.EmitNarration("\"There is a train leaving Waverley tomorrow morning at 9am.\"")
 		runtime.Sleep(3 * time.Second)
 		runtime.EmitNarration("\"If you board it, someone will meet you.\"")
 		runtime.Sleep(3 * time.Second)
@@ -355,4 +355,7 @@ func (c *Prologue) BeginPhaseCredibility(runtime engine.Runtime) {
 		// label: card through letterbox
 		runtime.EmitNarration("The card comes through the letterbox a few seconds later, landing on the doormat with barely a sound. You pick it up and examine it. It's cold to the touch, and the silver mark is slightly textured and raised.")
 	}
+
+	runtime.BlockUntilContinue()
+	runtime.SwitchChapter(TheCardID)
 }

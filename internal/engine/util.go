@@ -2,8 +2,22 @@ package engine
 
 import "time"
 
+const (
+	averageNarrationWordLength     = 5
+	averageNarrationWordsPerMinute = 220
+)
+
 func (e *Engine) EmitNarration(text string) {
 	e.Emit(Event{Kind: EventNarration, Text: text})
+}
+
+func (e *Engine) EmitNarrationAndWait(text string) {
+	e.EmitNarration(text)
+	e.Sleep(narrationWaitDuration(text))
+}
+
+func narrationWaitDuration(text string) time.Duration {
+	return time.Duration(len(text)) * time.Minute / (averageNarrationWordLength * averageNarrationWordsPerMinute)
 }
 
 func (e *Engine) EmitAside(text string) {
@@ -121,6 +135,10 @@ func (e *Engine) ConsumeCommandsInline() []Command {
 			return commands
 		}
 	}
+}
+
+func (e *Engine) SwitchChapter(id ChapterID) {
+	e.EmitAside("Chapter " + string(id) + " is not available from this runtime.")
 }
 
 func (e *Engine) Sleep(d time.Duration) {

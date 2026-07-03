@@ -14,6 +14,9 @@ build-web:
 run:
     go run main.go
 
+runc CHAPTER:
+	go run main.go --chapter {{CHAPTER}}
+
 test:
 	go test -v ./...
 

@@ -65,8 +65,20 @@ func NewModel() *Model {
 }
 
 func NewModelWithSize(width, height int) *Model {
+	return newModelWithEngine(width, height, story.NewEngine())
+}
+
+func NewModelWithSizeAndInitialChapter(width, height int, initial engine.ChapterID) (*Model, bool) {
+	gameEngine, ok := story.NewEngineWithInitialChapter(initial)
+	if !ok {
+		return nil, false
+	}
+
+	return newModelWithEngine(width, height, gameEngine), true
+}
+
+func newModelWithEngine(width, height int, gameEngine *engine.Engine) *Model {
 	ctx, cancel := context.WithCancel(context.Background())
-	gameEngine := story.NewEngine()
 	go gameEngine.Run(ctx)
 
 	return &Model{

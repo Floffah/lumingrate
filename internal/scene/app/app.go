@@ -1,6 +1,7 @@
 package app
 
 import (
+	"luminrate/internal/engine"
 	gamescene "luminrate/internal/scene/game"
 	"luminrate/internal/scene/main_menu"
 
@@ -37,7 +38,26 @@ func NewModel() Model {
 	}
 }
 
+func NewModelWithInitialChapter(initial engine.ChapterID) (Model, bool) {
+	game, ok := gamescene.NewModelWithSizeAndInitialChapter(defaultWidth, defaultHeight, initial)
+	if !ok {
+		return Model{}, false
+	}
+
+	return Model{
+		width:    defaultWidth,
+		height:   defaultHeight,
+		scene:    gameScene,
+		mainMenu: mainmenu.NewModel(),
+		game:     game,
+	}, true
+}
+
 func (m Model) Init() tea.Cmd {
+	if m.scene == gameScene && m.game != nil {
+		return m.game.Init()
+	}
+
 	return tea.RequestWindowSize
 }
 

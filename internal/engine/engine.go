@@ -35,10 +35,13 @@ const (
 	CommandTab
 )
 
+type ChapterID string
+
 type Runtime interface {
 	Sleep(time.Duration)
 	Emit(Event) bool
 	EmitNarration(string)
+	EmitNarrationAndWait(string)
 	EmitAside(string)
 	IsFastForward() bool
 	ShowInput()
@@ -50,6 +53,7 @@ type Runtime interface {
 	BlockUntilContinueWithText(string) string
 	ConsumeCommandsNow()
 	ConsumeCommandsInline() []Command
+	SwitchChapter(ChapterID)
 }
 
 type Chapter interface {

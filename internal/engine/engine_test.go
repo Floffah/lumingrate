@@ -138,6 +138,33 @@ func TestSleepReturnsWhenFastForwardEnabled(t *testing.T) {
 	}
 }
 
+func TestEmitNarrationAndWaitEmitsNarration(t *testing.T) {
+	gameEngine := NewEngine(nil)
+	gameEngine.ctx = context.Background()
+
+	gameEngine.EmitNarrationAndWait("")
+
+	select {
+	case event := <-gameEngine.Events():
+		if event.Kind != EventNarration {
+			t.Fatalf("event.Kind = %v, want %v", event.Kind, EventNarration)
+		}
+		if event.Text != "" {
+			t.Fatalf("event.Text = %q, want empty text", event.Text)
+		}
+	default:
+		t.Fatal("EmitNarrationAndWait did not emit an event")
+	}
+}
+
+func TestNarrationWaitDurationUsesReadingSpeedFormula(t *testing.T) {
+	text := make([]byte, averageNarrationWordLength*averageNarrationWordsPerMinute)
+
+	if got := narrationWaitDuration(string(text)); got != time.Minute {
+		t.Fatalf("narrationWaitDuration() = %v, want %v", got, time.Minute)
+	}
+}
+
 func expectContinuePrompt(t *testing.T, events <-chan Event) {
 	t.Helper()
 
