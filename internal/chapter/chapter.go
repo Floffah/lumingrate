@@ -19,8 +19,3 @@ func New(id engine.ChapterID) (engine.Chapter, bool) {
 		return nil, false
 	}
 }
-
-func NewInitialChapter() engine.Chapter {
-	chapter, _ := New(InitialID)
-	return chapter
-}

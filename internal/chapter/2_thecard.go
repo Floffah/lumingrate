@@ -58,15 +58,21 @@ func (c *TheCard) HandleCommand(runtime engine.Runtime, cmd string) {
 			}
 		} else if strings.Contains(cmd, "paper") {
 			c.amtInitialActions += 1
+			runtime.HideInput()
 			runtime.EmitNarrationAndWait("You open the old paper. The ignored one. Forty-three pages of careful modelling, yet it got several rejections, and some reviewers who clearly stopped reading halfway through.")
 			runtime.EmitNarration("You remember telling yourself it didn't matter. Apparently that was optimistic.")
+			runtime.ShowInput()
 			return
 		} else if strings.Contains(cmd, "train") {
-			runtime.EmitNarrationAndWait("You check the train times, there is in fact a train departing at 9am. Rush hour, really? Maybe I should get some sleep. Maybe I should check the card again, just to be sure.")
+			c.amtInitialActions += 1
+			runtime.EmitNarration("You check the train times, there is in fact a train departing at 9am. Rush hour, really? Maybe I should get some sleep. Maybe I should check the card again, just to be sure.")
 			return
 		} else if strings.Contains(cmd, "card") {
+			c.amtInitialActions += 1
+			runtime.HideInput()
 			runtime.EmitNarrationAndWait("The card says exactly what it said before. LUMINOUS OUTREACH DEPARTMENT. EDINBURGH WAVERLEY. 09:00. BRING THIS CARD.")
-			runtime.EmitNarrationAndWait("You turn it over again. Still blank. Well, apparently a civilisation beyond Earth doesn't believe in phone numbers.")
+			runtime.EmitNarration("You turn it over again. Still blank. Well, apparently a civilisation beyond Earth doesn't believe in phone numbers.")
+			runtime.ShowInput()
 			return
 		} else if strings.Contains(cmd, "sleep") || c.amtInitialActions >= 6 {
 			runtime.HideInput()

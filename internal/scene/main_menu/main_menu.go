@@ -17,14 +17,6 @@ var (
 	titleStyle          = style.MenuTitle
 	buttonStyle         = style.MenuButton
 	selectedButtonStyle = style.MenuButtonSelected
-	panelStyle          = style.Panel
-)
-
-type screen int
-
-const (
-	menuScreen screen = iota
-	settingsScreen
 )
 
 type StartGameMsg struct{}
@@ -32,7 +24,6 @@ type StartGameMsg struct{}
 type model struct {
 	width    int
 	height   int
-	screen   screen
 	selected int
 }
 
@@ -53,12 +44,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 	case tea.KeyPressMsg:
-		switch m.screen {
-		case menuScreen:
-			return m.updateMenu(msg)
-		case settingsScreen:
-			return m.updateSubscreen(msg)
-		}
+		return m.updateMenu(msg)
 	}
 
 	return m, nil
@@ -82,8 +68,6 @@ func (m model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		switch menuItem(m.selected) {
 		case startGameItem:
 			return m, startGame
-		case settingsItem:
-			m.screen = settingsScreen
 		case exitItem:
 			return m, tea.Quit
 		}
@@ -92,24 +76,8 @@ func (m model) updateMenu(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m model) updateSubscreen(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+c", "q":
-		return m, tea.Quit
-	case "esc", "backspace", "enter":
-		m.screen = menuScreen
-	}
-
-	return m, nil
-}
-
 func (m model) View() tea.View {
-	content := m.renderMenu()
-	if m.screen == settingsScreen {
-		content = m.renderSettings()
-	}
-
-	view := tea.NewView(m.place(content))
+	view := tea.NewView(m.place(m.renderMenu()))
 	view.AltScreen = true
 	view.BackgroundColor = style.ColourDark
 	view.ForegroundColor = style.ColourWhite
@@ -155,7 +123,6 @@ type menuItem int
 
 const (
 	startGameItem menuItem = iota
-	settingsItem
 	exitItem
 )
 
@@ -163,6 +130,5 @@ var menuItems = []struct {
 	label string
 }{
 	{label: "START GAME"},
-	{label: "SETTINGS"},
 	{label: "EXIT"},
 }

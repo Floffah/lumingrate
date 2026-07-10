@@ -168,17 +168,6 @@ func parseStartOptions(args []js.Value) startOptions {
 		return opts
 	}
 
-	if args[0].Type() == js.TypeFunction {
-		opts.write = args[0]
-		if len(args) > 1 {
-			opts.cols = positiveInt(args[1], defaultWidth)
-		}
-		if len(args) > 2 {
-			opts.rows = positiveInt(args[2], defaultHeight)
-		}
-		return opts
-	}
-
 	opts.write = args[0].Get("write")
 	opts.cols = positiveInt(args[0].Get("cols"), defaultWidth)
 	opts.rows = positiveInt(args[0].Get("rows"), defaultHeight)

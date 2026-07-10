@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	defaultWidth        = 80
-	defaultHeight       = 24
 	prompt              = "> "
 	cursorBlinkInterval = 1 * time.Second
 )
@@ -60,21 +58,17 @@ type Model struct {
 	skipHeld      bool
 }
 
-func NewModel() *Model {
-	return NewModelWithSize(defaultWidth, defaultHeight)
-}
-
 func NewModelWithSize(width, height int) *Model {
-	return newModelWithEngine(width, height, story.NewEngine())
+	return newModelWithEngine(width, height, engine.NewEngine(story.New()))
 }
 
 func NewModelWithSizeAndInitialChapter(width, height int, initial engine.ChapterID) (*Model, bool) {
-	gameEngine, ok := story.NewEngineWithInitialChapter(initial)
+	gameStory, ok := story.NewWithInitialChapter(initial)
 	if !ok {
 		return nil, false
 	}
 
-	return newModelWithEngine(width, height, gameEngine), true
+	return newModelWithEngine(width, height, engine.NewEngine(gameStory)), true
 }
 
 func newModelWithEngine(width, height int, gameEngine *engine.Engine) *Model {

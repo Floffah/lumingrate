@@ -230,7 +230,7 @@ func TestPromptVisibilityResyncsFastForward(t *testing.T) {
 }
 
 func TestViewRequestsKeyReleaseEvents(t *testing.T) {
-	model := Model{width: defaultWidth, height: defaultHeight}
+	model := Model{width: 80, height: 24}
 	view := model.View()
 
 	if !view.KeyboardEnhancements.ReportEventTypes {

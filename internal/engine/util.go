@@ -79,15 +79,16 @@ func (e *Engine) BlockUntilContinueWithText(message string) string {
 			if !ok {
 				return ""
 			}
-			if command.Kind == CommandSubmit {
+			switch command.Kind {
+			case CommandSubmit:
 				if NormaliseCommand(command.Text) == "" {
 					e.HideInput()
 					return ""
 				}
 				e.ShowInputMessage(message)
-			} else if command.Kind == CommandTab {
+			case CommandTab:
 				e.handleTab(command.Text)
-			} else {
+			default:
 				e.ShowInputMessage(message)
 			}
 		}
@@ -126,9 +127,10 @@ func (e *Engine) ConsumeCommandsInline() []Command {
 			if !ok {
 				return commands
 			}
-			if command.Kind == CommandSubmit {
+			switch command.Kind {
+			case CommandSubmit:
 				commands = append(commands, command)
-			} else if command.Kind == CommandTab {
+			case CommandTab:
 				e.handleTab(command.Text)
 			}
 		default:

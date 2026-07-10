@@ -36,19 +36,6 @@ func newWithFactory(initial engine.ChapterID, factory chapterFactory) *Story {
 	}
 }
 
-func NewEngine() *engine.Engine {
-	return engine.NewEngine(New())
-}
-
-func NewEngineWithInitialChapter(initial engine.ChapterID) (*engine.Engine, bool) {
-	story, ok := NewWithInitialChapter(initial)
-	if !ok {
-		return nil, false
-	}
-
-	return engine.NewEngine(story), true
-}
-
 func (s *Story) Begin(runtime engine.Runtime) {
 	s.switchChapter(runtime, s.initial)
 }

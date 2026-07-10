@@ -4,7 +4,6 @@ import "charm.land/lipgloss/v2"
 
 const (
 	ButtonWidth = 22
-	PanelWidth  = 48
 )
 
 var (
@@ -12,16 +11,11 @@ var (
 	ColourWhite = lipgloss.Color("#F7F7F2")
 	ColourMuted = lipgloss.Color("#777777")
 
-	ColourBackground      = ColourDark
-	ColourForeground      = ColourWhite
-	ColourMutedForeground = ColourMuted
+	ColourBackground = ColourDark
+	ColourForeground = ColourWhite
 
 	Background = lipgloss.NewStyle().
 			Background(ColourBackground)
-	Foreground = lipgloss.NewStyle().
-			Foreground(ColourForeground)
-	Muted = lipgloss.NewStyle().
-		Foreground(ColourMuted)
 
 	Screen = lipgloss.NewStyle().
 		Background(ColourBackground).
@@ -70,10 +64,4 @@ var (
 	MenuButtonSelected = MenuButton.
 				Background(ColourForeground).
 				Foreground(ColourBackground)
-
-	Panel = lipgloss.NewStyle().
-		Background(ColourBackground).
-		Foreground(ColourForeground).
-		Align(lipgloss.Center).
-		Width(PanelWidth)
 )
